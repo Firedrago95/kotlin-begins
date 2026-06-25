@@ -16,3 +16,13 @@ import jakarta.persistence.*
 */
 
 // 코드를 작성해라.
+@Entity
+@Table(name = "reviews")
+class Review(
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long? = null,
+    val content: String,
+    var sentiment: String? = null,
+    var summary: String? = null
+)
