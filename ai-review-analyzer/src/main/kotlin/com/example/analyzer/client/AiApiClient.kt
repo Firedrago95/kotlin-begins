@@ -50,9 +50,9 @@ class AiApiClient(
             .uri("/chat/completions")
             .body(openAiRequest)
             .retrieve()
-            .onStatus(HttpStatusCode::is4xxClientError) { request, response -> throw NonRetryableApiException("4xx 에러 발생") }
-            .onStatus(HttpStatusCode::is5xxServerError) { request, response -> throw TransientApiException("5xx 에러 발생") }
-            .body<OpenAiResponse>() ?: throw UnexpectedApiException("예상치 못한 에러 발생했습니다.")
+            .onStatus(HttpStatusCode::is4xxClientError) { request, response -> throw NonRetryableApiException() }
+            .onStatus(HttpStatusCode::is5xxServerError) { request, response -> throw TransientApiException() }
+            .body<OpenAiResponse>() ?: throw UnexpectedApiException()
 
         // [작성 완료] 응답 매핑
         val text = response.choices[0].message.content
