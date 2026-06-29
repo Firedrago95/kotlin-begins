@@ -44,3 +44,21 @@ Kotlin 실무 및 면접에서 단골로 등장하는 **"에러를 예외(Except
 > "Spring 생태계 핵심 기능들이 예외 전파를 전제로 동작하므로 **예외 기반 처리가 합리적인 기본값**입니다. 
 > 다만, 외부 API 호출처럼 실패가 '예상 가능한 정상 흐름'인 경계 지점에서는 **`Result`로 명시**하는 것도 의미 있는 선택지입니다. (예: Client는 throw, Service는 Result로 잡기, 혹은 끝까지 throw 후 @ControllerAdvice 처리 등)
 > **결론:** 절대적인 정답은 없으며 **프로젝트의 일관성**이 가장 중요합니다. 단, Result로 감싸더라도 `@Transactional` 롤백이 필요한 시점에는 예외가 밖으로 전파(`getOrThrow()`)되도록 주의해야 합니다."
+
+## 📝 [3일차] 코틀린 테스팅 전략과 MockK
+
+### 1. 왜 Mockito 대신 MockK를 사용할까?
+*   Java 진영의 표준인 Mockito는 클래스(또는 인터페이스)를 상속(Proxy)받아 가짜 객체를 생성한다.
+*   하지만 코틀린은 언어 철학상 기본적으로 모든 클래스와 메서드가 **상속 불가(`final`)** 상태이다.
+*   따라서 Mockito를 코틀린에서 무작정 사용하면 에러가 발생하거나 억지로 `open`을 붙여야 하는 문제가 생긴다.
+*   **결론:** 코틀린의 `final` 클래스, Object, Companion Object까지 네이티브하게 완벽 지원하는 코틀린 전용 라이브러리 **`MockK`**를 사용하는 것이 실무 압도적 표준이다.
+
+### 2. 서비스 순수 단위 테스트 (Pure Unit Test)
+*   서비스 계층은 비즈니스 핵심이므로 테스트가 0.1초 만에 가장 빨리 돌아야 한다. 따라서 `@SpringBootTest`로 스프링을 띄우지 않고 순수 테스트를 작성한다.
+*   **주 생성자 DI 불가:** 스프링 컨텍스트가 없기 때문에 스프링이 의존성을 주입해 줄 수 없다. 또한 JUnit 프레임워크는 기본적으로 파라미터가 없는 생성자를 원한다.
+*   **해결:** 테스트 클래스 본문 안에서 `mockk()`를 호출하여 직접 가짜 객체를 초기화하고 주입한다.
+
+### 3. MockK 핵심 문법 3대장 (BDD 스타일)
+*   **Mock 생성:** `val mockObj: AiApiClient = mockk()`
+*   **기대 행동 정의 (Given):** `every { mockObj.requestAnalysis(any()) } returns AiResponse(...)`
+*   **호출 횟수 검증 (Then):** `verify(exactly = 1) { mockObj.requestAnalysis(any()) }`
