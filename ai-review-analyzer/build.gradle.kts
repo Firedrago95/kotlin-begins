@@ -34,6 +34,7 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("io.mockk:mockk:1.13.11") // 코틀린 전용 Mock 라이브러리 추가
+    testImplementation("com.ninja-squad:springmockk:4.0.2") // 스프링 부트용 @MockkBean 지원
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
