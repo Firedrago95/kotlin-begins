@@ -13,8 +13,11 @@ import org.junit.jupiter.api.DisplayNameGeneration
 import org.junit.jupiter.api.DisplayNameGenerator
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.http.MediaType
+import org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document
+import org.springframework.restdocs.payload.PayloadDocumentation.*
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
@@ -22,6 +25,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @WebMvcTest(ReviewController::class)
+@AutoConfigureRestDocs
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores::class)
 class ReviewControllerTest {
 
@@ -52,6 +56,19 @@ class ReviewControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.sentiment").value("JOY"))
             .andExpect(jsonPath("$.summary").value("긍정적인 리뷰"))
+            .andDo(
+                document(
+                    "review-analyze",
+                    requestFields(
+                        fieldWithPath("content").description("리뷰 내용 본문")
+                    ),
+                    responseFields(
+                        fieldWithPath("id").description("저장된 리뷰 ID"),
+                        fieldWithPath("sentiment").description("AI가 분석한 감정 상태"),
+                        fieldWithPath("summary").description("리뷰 핵심 요약")
+                    )
+                )
+            )
 
         val requestSlot = slot<ReviewRequest>()
         verify(exactly = 1) { reviewApplicationService.processReview(capture(requestSlot)) }
