@@ -8,6 +8,7 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
+import jakarta.persistence.Index
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import org.springframework.data.annotation.CreatedDate
@@ -15,8 +16,13 @@ import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.ZonedDateTime
 
+@Table(
+    name = "threads",
+    indexes = [
+        Index(name = "idx_user_updated", columnList = "user_id, updated_at DESC")
+    ]
+)
 @Entity
-@Table(name="threads")
 @EntityListeners(AuditingEntityListener::class)
 class Thread (
     @ManyToOne(fetch = FetchType.LAZY)
