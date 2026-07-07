@@ -10,7 +10,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.springframework.data.annotation.CreatedDate
-import org.springframework.data.annotation.LastModifiedBy
+import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
@@ -39,6 +39,6 @@ class User (
     @Column(updatable = false)
     var createdAt: ZonedDateTime? = null
 
-    @LastModifiedBy
+    @LastModifiedDate
     var updatedAt: ZonedDateTime? = null
 }
