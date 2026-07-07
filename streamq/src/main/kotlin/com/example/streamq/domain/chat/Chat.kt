@@ -33,7 +33,7 @@ abstract class Chat (
     @JoinColumn(name = "thread_id", nullable = false)
     val thread: Thread,
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     val content: String
 ){
     @Id
