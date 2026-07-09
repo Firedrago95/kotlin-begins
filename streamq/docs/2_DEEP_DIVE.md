@@ -26,3 +26,11 @@
 3.  **`SecurityContextHolder` (인트라넷 금고)**: 톰캣의 Thread-per-request 모델을 활용해, 현재 요청을 처리 중인 스레드(`ThreadLocal`) 전용 금고에 신분증을 보관한다. 이후 Controller(`@AuthenticationPrincipal`)에서 별도 파싱 없이 유저 정보를 꺼내 쓸 수 있다.
 
 ## 2. 구글 로그인
+
+### 1. 스프링 시큐리티와 구글 로그인 흐름
+1. **로그인 시작:** '구글 로그인 버튼 클릭' -> `http://{서버 도메인}/oauth2/authorization/google` (공식 시작 주소) 요청
+2. **가로채기:** 스프링 시큐리티 최전방 필터 `OAuth2LoginAuthenticationFilter`가 구글 로그인 페이지로 리다이렉트(컨트롤러 필요 x)
+3. **콜백수신:** 사용자가 구글 로그인에서 동의 누르면, `http://{서버 도메인}/login/oauth2/code/google` (공식 콜백 주소)로 인증 코드를 전송
+4. **또 가로채기:** 최전방 필터가 또 가로채서, 구글 인증 서버와 통신하여 `Acess Token` `ID Token` 바꿔온다.
+5. **대리 호출:** 필터가 `CustomOAuth2UserService`(내가 짠 서비스)의 `loadUser()` 호출 이때 내부적으로 `super.loadUser()`가 실행되면서, 넘겨받은 `Access Token`을 들고 구글 프로필 조회 API를 한 번 더 호출하여 진짜 유저 정보(이메일, 이름 등)를 가져옵니다.
+6. **마무리:** `loadUser()`에서 DB 저장이 끝나면, 필터는 `OAuth2SuccessHandler`(내가 짠 핸들러) 호출

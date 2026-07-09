@@ -38,6 +38,8 @@ class User (
     @Column(nullable = false)
     var name: String,
 
+    var picture: String? = null,
+
     @Enumerated(EnumType.STRING)
     var role: Role = Role.MEMBER,
 ){
