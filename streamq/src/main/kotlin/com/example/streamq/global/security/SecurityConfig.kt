@@ -20,6 +20,7 @@ class SecurityConfig (
     private val jwtAuthFilter: JwtAuthFilter,
     private val customOAuth2UserService: CustomOAuth2UserService,
     private val oAuth2SuccessHandler: OAuth2SuccessHandler,
+    private val oAuth2FailureHandler: OAuth2FailureHandler,
     private val objectMapper: ObjectMapper
 ){
     @Bean
@@ -46,6 +47,7 @@ class SecurityConfig (
                     endpoint.userService(customOAuth2UserService)
                 }
                 oauth2.successHandler(oAuth2SuccessHandler)
+                oauth2.failureHandler(oAuth2FailureHandler)
             }
             .authorizeHttpRequests { auth ->
                 auth
