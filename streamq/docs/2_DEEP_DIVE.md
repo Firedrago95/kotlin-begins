@@ -24,3 +24,5 @@
 1.  **`SimpleGrantedAuthority` (권한 스티커)**: String으로는 권한을 줄 수 없어, 스프링이 요구하는 `GrantedAuthority` 규격에 맞춘 기본 구현체. (주의: `SecurityConfig`에서 `hasRole()`을 사용하기 위해서는 반드시 내부에 `"ROLE_"` prefix가 포함되어 있어야 하므로, 필터에서 안전장치 처리가 필수적이다.)
 2.  **`UsernamePasswordAuthenticationToken` (공식 사원증)**: 스프링 시큐리티의 최고 조상인 `Authentication`의 구현체. Principal(사용자 ID), Credentials(비밀번호, 우리는 JWT를 쓰므로 null), Authorities(권한 스티커 목록)를 담는 신분증 역할을 한다. (3-인자 생성자를 사용하면 자동으로 `authenticated = true` 상태가 됨)
 3.  **`SecurityContextHolder` (인트라넷 금고)**: 톰캣의 Thread-per-request 모델을 활용해, 현재 요청을 처리 중인 스레드(`ThreadLocal`) 전용 금고에 신분증을 보관한다. 이후 Controller(`@AuthenticationPrincipal`)에서 별도 파싱 없이 유저 정보를 꺼내 쓸 수 있다.
+
+## 2. 구글 로그인
