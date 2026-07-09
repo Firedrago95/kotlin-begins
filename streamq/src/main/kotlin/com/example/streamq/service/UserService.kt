@@ -28,7 +28,8 @@ class UserService (
                     email = email,
                     provider = provider,
                     providerId = providerId,
-                    name = name
+                    name = name,
+                    picture = picture
                 )
             )
     }
