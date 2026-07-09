@@ -2,6 +2,7 @@ package com.example.streamq.global.security
 
 import com.example.streamq.global.exception.ErrorCode
 import com.example.streamq.global.exception.ErrorResponse
+import com.example.streamq.service.CustomOAuth2UserService
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
@@ -17,6 +18,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 class SecurityConfig (
     private val jwtAuthFilter: JwtAuthFilter,
+    private val customOAuth2UserService: CustomOAuth2UserService,
+    private val oAuth2SuccessHandler: OAuth2SuccessHandler,
     private val objectMapper: ObjectMapper
 ){
     @Bean
@@ -37,6 +40,12 @@ class SecurityConfig (
             .httpBasic { it.disable() }
             .sessionManagement {
                 it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            }
+            .oauth2Login { oauth2 ->
+                oauth2.userInfoEndpoint { endpoint ->
+                    endpoint.userService(customOAuth2UserService)
+                }
+                oauth2.successHandler(oAuth2SuccessHandler)
             }
             .authorizeHttpRequests { auth ->
                 auth

@@ -1,11 +1,9 @@
 package com.example.streamq.service
 
-import com.example.streamq.domain.user.UserRepository
+import com.example.streamq.global.security.CustomOAuth2User
 import org.slf4j.LoggerFactory
-import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.stereotype.Service
 
@@ -22,10 +20,6 @@ class CustomOAuth2UserService (
 
         val user = userService.getOrRegisterUser(providerStr, attributes)
 
-        return DefaultOAuth2User(
-            listOf(SimpleGrantedAuthority("ROLE_${user.role.name}")),
-            attributes,
-            "sub"
-        )
+        return CustomOAuth2User(user, attributes)
     }
 }
