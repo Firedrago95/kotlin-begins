@@ -2,6 +2,7 @@ package com.example.streamq.global.security
 
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
+import io.jsonwebtoken.JwtException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -38,11 +39,14 @@ class JwtTokenProvider (
                 .parseSignedClaims(token)
 
             val id = claims.payload.subject.toLong()
-            val role = claims.payload.get("role", String::class.java)
+            val role = claims.payload.get("role", String::class.java) ?: return null
 
             Pair(id, role)
-        } catch (e: Exception) {
-            log.error("유효하지 않은 토큰입니다. 원인: {}", e.message)
+        } catch (e: JwtException) {
+            log.error("JWT 검증 실패: {}", e.message)
+            null
+        } catch (e: IllegalArgumentException) {
+            log.error("JWT 파싱 에러: {}", e.message)
             null
         }
     }
