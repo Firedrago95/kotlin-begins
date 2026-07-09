@@ -9,10 +9,10 @@
 - [x] `Feedback`, `FeedbackStatus` 엔티티 설계
 - [x] 각 도메인별 Repository 인터페이스 생성 (Spring Data JPA)
 
-## Phase 2: 글로벌 설정 및 보안 (Global & Security)
-- [ ] 전역 예외 처리기 (Global Exception Handler) 구축
-- [ ] JWT 기반 인증/인가 유틸리티 구현 (`auth` 패키지)
-- [ ] Spring Security (WebFlux 기반) 설정 적용
+## Phase 2: 글로벌 설정 및 보안 (Global & Security) (완료 🚀)
+- [x] 전역 예외 처리기 (Global Exception Handler) 구축
+- [x] JWT 기반 인증/인가 유틸리티 구현 (`auth` 패키지)
+- [x] Spring Security (WebMvc 기반) 설정 적용
 
 ## Phase 3: 비즈니스 로직 및 외부 API 연동 (Service Layer)
 - [ ] `AuthService`: 회원가입 및 로그인 로직
