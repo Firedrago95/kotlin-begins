@@ -25,7 +25,7 @@ class ChatAppService(
         // 1. 블로킹 작업을 boundedElastic 에게 던짐
         return Mono.fromCallable {
             val (userChat, aiChat) = chatDomainService.prepareChats(userId, request.content)
-            val history = chatDomainService.getHistory(userChat.thread.id, aiChat.id)
+            val history = chatDomainService.getChatHistory(userChat.thread.id, aiChat.id)
             val aiMessages = history.map {
                 AiMessageDto(
                     role = if (it.javaClass.simpleName == "UserChat") "user" else "assistant",
@@ -61,25 +61,27 @@ class ChatAppService(
     private fun handleSyncChat(userId: Long, request: ChatRequest): Mono<String> {
         return Mono.fromCallable {
             val (userChat, aiChat) = chatDomainService.prepareChats(userId, request.content)
-            val history = chatDomainService.getHistory(userChat.thread.id, aiChat.id)
+            val history = chatDomainService.getChatHistory(userChat.thread.id, aiChat.id)
             val aiMessages = history.map {
                 AiMessageDto (
                     role = if (it.javaClass.simpleName == "UserChat") "user" else "assistant",
                     content = it.content
                 )
             }
-            Pair(aiChat, aiMessages)
+            Pair(aiChat.id, aiMessages)
         }
         .subscribeOn(Schedulers.boundedElastic())
         .flatMap { (aiChatId, aiMessages) ->
             aiClient.askSync(aiMessages, request.model)
                 .flatMap { finalContent ->
-                    Mono.fromRunnable {
-                        chatDomainService.updateChatSuccess(aiChatId, finalContent)
+                    Mono.fromRunnable<Void> {
+                        chatDomainService.updateAiChatSuccess(aiChatId, finalContent)
                     }.subscribeOn(Schedulers.boundedElastic())
+                    .thenReturn(finalContent)
                 }
                 .onErrorResume { error ->
-                    Mono.fromCallable {
+                    Mono.fromRunnable<Void> {
+                        chatDomainService.updateAiChatFailed(aiChatId)
                     }.subscribeOn(Schedulers.boundedElastic())
                     .then(Mono.error(error))
                 }
