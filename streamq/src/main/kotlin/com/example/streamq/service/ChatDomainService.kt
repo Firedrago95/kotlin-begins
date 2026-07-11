@@ -55,6 +55,12 @@ class ChatDomainService(
         chat.status = ChatStatus.PARTIAL
     }
 
+    fun updateAiChatFiltered(aiChatId: Long, partialContent: String) {
+        val chat = chatRepository.findById(aiChatId).orElseThrow() as AiChat
+        chat.content = partialContent
+        chat.status = ChatStatus.FILTERED
+    }
+
     @Transactional(readOnly = true)
     fun getChatHistory(threadId: Long, excludeChatId: Long): List<Chat> {
         return chatRepository.findTop20ByThreadIdAndIdNotOrderByCreatedAtDesc(threadId, excludeChatId).reversed()

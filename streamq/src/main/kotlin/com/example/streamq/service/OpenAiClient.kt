@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Flux
+import org.springframework.http.codec.ServerSentEvent
+import org.springframework.core.ParameterizedTypeReference
+import com.example.streamq.dto.OpenAiStreamResponse
 
 @Component
 class OpenAiClient(
@@ -16,7 +19,7 @@ class OpenAiClient(
     @Value("\${openai.url:https://api.openai.com/v1/chat/completions}") private val openAiUrl: String
 ) : AiClient {
 
-    override fun askStreaming(messages: List<AiMessageDto>, model: String): Flux<String> {
+    override fun askStreaming(messages: List<AiMessageDto>, model: String): Flux<StreamEvent> {
         val requestBody = mapOf(
             "model" to model,
             "messages" to messages,
@@ -29,13 +32,36 @@ class OpenAiClient(
             .header("Authorization", "Bearer $apiKey")
             .bodyValue(requestBody)
             .retrieve()
-            .bodyToFlux(String::class.java)
+            .onStatus({ it.is4xxClientError }) { response ->
+                val errorCode = when (response.statusCode()) {
+                    org.springframework.http.HttpStatus.UNAUTHORIZED -> com.example.streamq.global.exception.ErrorCode.OPENAI_UNAUTHORIZED
+                    org.springframework.http.HttpStatus.TOO_MANY_REQUESTS -> com.example.streamq.global.exception.ErrorCode.OPENAI_RATE_LIMIT
+                    else -> com.example.streamq.global.exception.ErrorCode.EXTERNAL_API_CLIENT_ERROR
+                }
+                reactor.core.publisher.Mono.error(com.example.streamq.global.exception.ExternalApiException(errorCode))
+            }
+            .onStatus({ it.is5xxServerError }) { _ ->
+                reactor.core.publisher.Mono.error(com.example.streamq.global.exception.ExternalApiException(com.example.streamq.global.exception.ErrorCode.OPENAI_SERVER_ERROR))
+            }
+            .bodyToFlux(object : ParameterizedTypeReference<ServerSentEvent<String>>() {})
             .timeout(java.time.Duration.ofSeconds(60))
-            .filter { it.isNotBlank() }
-            .map { it.removePrefix("data: ").trim() }
-            .takeWhile { it != "[DONE]" }
-            .mapNotNull<String> { cleanChunk -> parseStreamingChunk(cleanChunk) }
-            .filter { it.isNotEmpty() }
+            .filter { !it.data().isNullOrBlank() }
+            .takeWhile { it.data() != "[DONE]" }
+            .mapNotNull<StreamEvent> { sse ->
+                try {
+                    val response = objectMapper.readValue(sse.data(), OpenAiStreamResponse::class.java)
+                    val choice = response.choices.firstOrNull() ?: return@mapNotNull null
+                    if (choice.finishReason == "content_filter") {
+                        StreamEvent.Filtered("content_filter")
+                    } else if (!choice.delta.content.isNullOrEmpty()) {
+                        StreamEvent.Content(choice.delta.content)
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+            }
     }
 
     override fun askSync(messages: List<AiMessageDto>, model: String): reactor.core.publisher.Mono<String> {
@@ -51,19 +77,20 @@ class OpenAiClient(
             .header("Authorization", "Bearer $apiKey")
             .bodyValue(requestBody)
             .retrieve()
+            .onStatus({ it.is4xxClientError }) { response ->
+                val errorCode = when (response.statusCode()) {
+                    org.springframework.http.HttpStatus.UNAUTHORIZED -> com.example.streamq.global.exception.ErrorCode.OPENAI_UNAUTHORIZED
+                    org.springframework.http.HttpStatus.TOO_MANY_REQUESTS -> com.example.streamq.global.exception.ErrorCode.OPENAI_RATE_LIMIT
+                    else -> com.example.streamq.global.exception.ErrorCode.EXTERNAL_API_CLIENT_ERROR
+                }
+                reactor.core.publisher.Mono.error(com.example.streamq.global.exception.ExternalApiException(errorCode))
+            }
+            .onStatus({ it.is5xxServerError }) { _ ->
+                reactor.core.publisher.Mono.error(com.example.streamq.global.exception.ExternalApiException(com.example.streamq.global.exception.ErrorCode.OPENAI_SERVER_ERROR))
+            }
             .bodyToMono(String::class.java)
             .mapNotNull<String> { jsonString -> parseSyncResponse(jsonString) }
             .defaultIfEmpty("")
-    }
-
-    private fun parseStreamingChunk(cleanChunk: String): String? {
-        if (!cleanChunk.startsWith("{")) return null
-        return try {
-            val rootNode = objectMapper.readTree(cleanChunk)
-            rootNode.path("choices").get(0)?.path("delta")?.path("content")?.asText()
-        } catch (e: JsonProcessingException) {
-            null
-        }
     }
 
     private fun parseSyncResponse(jsonString: String): String? {
