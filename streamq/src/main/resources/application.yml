@@ -1,2 +1,17 @@
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client_id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: profile, email
+
 security:
   secretkey: ${JWT_SECRET_KEY}
+
+app:
+  oauth2:
+    # 환경변수 FRONTEND_REDIRECT_URI가 없으면, 뒤의 http://localhost... 를 기본값으로 사용합니다.
+    authorized-redirect-uri: ${FRONTEND_REDIRECT_URI:http://localhost:3000/login/success}

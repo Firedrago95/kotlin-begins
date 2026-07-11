@@ -18,13 +18,13 @@ class JwtTokenProvider (
     private val key: SecretKey = Keys.hmacShaKeyFor(secretKey.toByteArray())
     private val log = LoggerFactory.getLogger(this::class.java)
 
-    fun generateToken(id: Long, role: String): String {
+    fun generateToken(id: String, role: String): String {
         val now = Date()
         val expiration = Date(now.time + EXPIRATION_TIME)
 
         return Jwts.builder()
             .claim("role", role)
-            .subject(id.toString())
+            .subject(id)
             .issuedAt(now)
             .expiration(expiration)
             .signWith(key)

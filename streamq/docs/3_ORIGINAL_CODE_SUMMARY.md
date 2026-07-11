@@ -44,3 +44,16 @@
   * **블로킹 I/O 격리**: JPA를 통한 DB 저장(UserChat 및 AiChat Pending 상태 생성, 이전 히스토리 조회)은 동기식(블로킹)이므로, 이것이 Netty 스레드 위에서 실행되면 전체 서버가 마비될 수 있습니다. 이를 방지하기 위해 `Mono.fromCallable`로 감싼 뒤 `.subscribeOn(Schedulers.boundedElastic())`을 통해 무거운 DB 작업을 별도의 임시 스레드 풀로 넘겨(Offloading) 처리합니다.
   * **스트리밍 결합**: 이후 `flatMapMany`를 통해 WebClient 기반의 `aiClient.askStreaming`을 호출하여 비동기 스트림을 리턴함.
   * **스트림 종료 후 상태 업데이트**: `doFinally` 연산자를 활용해 스트리밍이 완료(ON_COMPLETE), 취소(CANCEL), 에러 발생 시 최종 답변 내용을 모아서 다시 `.subscribeOn(Schedulers.boundedElastic())` 환경에서 JPA 상태 업데이트(SUCCESS/FAILED)를 안전하게 수행하여 Netty 스레드를 철저히 보호합니다.
+
+## 3. OAuth2 & JWT 기반 보안 아키텍처 (AI 기억용 추가 내용)
+
+* **CustomOAuth2User & 다중 Provider 확장성**:
+  * 구글이 제공하는 식별자(`sub`)를 JWT에 그대로 넣으면 추후 카카오/네이버 연동 시 식별자 충돌 및 비즈니스 로직 분기가 복잡해집니다.
+  * 이를 해결하기 위해 `DefaultOAuth2User` 대신 `CustomOAuth2User`를 구현하여 도메인의 진짜 `User` 엔티티를 감쌉니다.
+  * SecurityContext에는 우리 DB의 `PK(id)`를 주 식별자로 반환(`getName()`)하도록 하여, 발급되는 JWT의 식별자에는 무조건 내부 `PK`가 들어가도록 설계되었습니다.
+* **Dirty Checking (더티 체킹) 활용**:
+  * `UserService.getOrRegisterUser()`는 `@Transactional`을 통해 DB에서 회원을 조회하거나 신규 가입(`save()`) 시킵니다.
+  * 기존 회원이 로그인할 경우 구글의 최신 프로필로 갱신하는데, `apply {}` 블록으로 값을 재할당하기만 하면 JPA의 변경 감지가 동작하여 명시적인 `save()` 호출 없이 `UPDATE` 쿼리가 발생합니다.
+* **OAuth2SuccessHandler**:
+  * 인증 성공 시 `CustomOAuth2User`에서 `PK`와 `ROLE_`이 포함된 권한을 꺼내어 자체 JWT Access Token을 발급합니다.
+  * 토큰은 `@Value`로 주입된 프론트엔드 URL에 쿼리 파라미터 형태로 리다이렉트되어 전달됩니다. (SPA 환경 실무 타협안 적용)

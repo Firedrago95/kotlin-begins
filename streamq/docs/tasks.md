@@ -15,7 +15,7 @@
 - [x] Spring Security (WebMvc 기반) 설정 적용
 
 ## Phase 3: 비즈니스 로직 및 외부 API 연동 (Service Layer)
-- [ ] `AuthService`: 회원가입 및 로그인 로직
+- [x] `OAuth2 Login & JWT`: 소셜 로그인(Google) 연동, CustomOAuth2User 구현 및 JWT 자체 발급/리다이렉트 (완료 🚀)
 - [ ] `OpenAiClient`: Spring WebClient를 이용한 OpenAI API 스트리밍 연동
 - [ ] `ChatDomainService` & `ChatAppService`: 채팅 저장, 조회, AI 응답 생성 파이프라인
 - [ ] `ChatQueryService`: 채팅 내역 조회 (페이징/커서 기반)
