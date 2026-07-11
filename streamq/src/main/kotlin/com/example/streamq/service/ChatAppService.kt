@@ -1,5 +1,6 @@
 package com.example.streamq.service
 
+import com.example.streamq.domain.chat.UserChat
 import com.example.streamq.dto.AiMessageDto
 import com.example.streamq.dto.ChatRequest
 import org.slf4j.LoggerFactory
@@ -24,7 +25,7 @@ class ChatAppService(
             val history = chatDomainService.getChatHistory(userChat.thread.id, aiChat.id)
             val aiMessages = history.map {
                 AiMessageDto(
-                    role = if (it.javaClass.simpleName == "UserChat") "user" else "assistant",
+                    role = if (it is UserChat) "user" else "assistant",
                     content = it.content
                 )
             }
@@ -35,6 +36,7 @@ class ChatAppService(
         .flatMapMany { (aiChatId, aiMessages) ->
             val responseBuilder = StringBuilder()
             var isFiltered = false
+            var isErrored = false
 
             aiClient.askStreaming(aiMessages, request.model)
                 .doOnNext { event ->
@@ -58,6 +60,7 @@ class ChatAppService(
                         Mono.error(error)
                     } else {
                         // 이미 스트리밍이 시작된 후 발생한 에러 -> HTTP 상태를 바꿀 수 없으므로 SSE 인밴드 이벤트로 에러 발송
+                        isErrored = true
                         log.error("Streaming failed mid-flight", error)
                         Flux.just("event: error\ndata: 응답 생성 중 오류가 발생했습니다.\n\n")
                     }
@@ -65,7 +68,9 @@ class ChatAppService(
                 .doFinally { signalType ->
                     Mono.fromRunnable<Void> {
                         val finalContent = responseBuilder.toString()
-                        if (isFiltered) {
+                        if (isErrored) {
+                            chatDomainService.updateAiChatFailed(aiChatId)
+                        } else if (isFiltered) {
                             chatDomainService.updateAiChatFiltered(aiChatId, finalContent)
                         } else if (signalType == SignalType.ON_COMPLETE) {
                             chatDomainService.updateAiChatSuccess(aiChatId, finalContent)
@@ -87,7 +92,7 @@ class ChatAppService(
             val history = chatDomainService.getChatHistory(userChat.thread.id, aiChat.id)
             val aiMessages = history.map {
                 AiMessageDto (
-                    role = if (it.javaClass.simpleName == "UserChat") "user" else "assistant",
+                    role = if (it is UserChat) "user" else "assistant",
                     content = it.content
                 )
             }

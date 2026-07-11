@@ -39,26 +39,38 @@ class ChatDomainService(
     }
 
     fun updateAiChatSuccess(aiChatId: Long, fullContent: String) {
-        val chat = chatRepository.findById(aiChatId).orElseThrow() as AiChat
-        chat.content = fullContent
-        chat.status = ChatStatus.COMPLETED
+        chatRepository.findById(aiChatId).ifPresent { chat ->
+            if (chat is AiChat) {
+                chat.content = fullContent
+                chat.status = ChatStatus.COMPLETED
+            }
+        }
     }
 
     fun updateAiChatFailed(aiChatId: Long) {
-        val chat = chatRepository.findById(aiChatId).orElseThrow() as AiChat
-        chat.status = ChatStatus.FAILED
+        chatRepository.findById(aiChatId).ifPresent { chat ->
+            if (chat is AiChat) {
+                chat.status = ChatStatus.FAILED
+            }
+        }
     }
 
     fun updateAiChatPartial(aiChatId: Long, partialContent: String) {
-        val chat = chatRepository.findById(aiChatId).orElseThrow() as AiChat
-        chat.content = partialContent
-        chat.status = ChatStatus.PARTIAL
+        chatRepository.findById(aiChatId).ifPresent { chat ->
+            if (chat is AiChat) {
+                chat.content = partialContent
+                chat.status = ChatStatus.PARTIAL
+            }
+        }
     }
 
     fun updateAiChatFiltered(aiChatId: Long, partialContent: String) {
-        val chat = chatRepository.findById(aiChatId).orElseThrow() as AiChat
-        chat.content = partialContent
-        chat.status = ChatStatus.FILTERED
+        chatRepository.findById(aiChatId).ifPresent { chat ->
+            if (chat is AiChat) {
+                chat.content = partialContent
+                chat.status = ChatStatus.FILTERED
+            }
+        }
     }
 
     @Transactional(readOnly = true)

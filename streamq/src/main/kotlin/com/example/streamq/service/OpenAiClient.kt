@@ -10,6 +10,7 @@ import reactor.core.publisher.Flux
 import org.springframework.http.codec.ServerSentEvent
 import org.springframework.core.ParameterizedTypeReference
 import com.example.streamq.dto.OpenAiStreamResponse
+import org.slf4j.LoggerFactory
 
 @Component
 class OpenAiClient(
@@ -18,6 +19,7 @@ class OpenAiClient(
     @Value("\${openai.api-key:dummy-api-key}") private val apiKey: String,
     @Value("\${openai.url:https://api.openai.com/v1/chat/completions}") private val openAiUrl: String
 ) : AiClient {
+    private val log = LoggerFactory.getLogger(OpenAiClient::class.java)
 
     override fun askStreaming(messages: List<AiMessageDto>, model: String): Flux<StreamEvent> {
         val requestBody = mapOf(
@@ -59,6 +61,7 @@ class OpenAiClient(
                         null
                     }
                 } catch (e: Exception) {
+                    log.warn("OpenAI SSE JSON parsing failed: {}", sse.data(), e)
                     null
                 }
             }
