@@ -1,6 +1,7 @@
 package com.example.streamq.controller
 
 import com.example.streamq.dto.ChatRequest
+import com.example.streamq.dto.ChatSyncResponse
 import com.example.streamq.service.ChatAppService
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -9,7 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/api/v1/chats")
@@ -21,15 +22,20 @@ class ChatController (
     fun createChat(
         @AuthenticationPrincipal userId: Long,
         @RequestBody request: ChatRequest
-    ): ResponseEntity<Flux<String>> {
-        val mediaType = if (request.isStreaming) {
-            MediaType.TEXT_EVENT_STREAM
+    ): Mono<ResponseEntity<*>> {
+        return if (request.isStreaming) {
+            Mono.just(
+                ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_EVENT_STREAM)
+                    .body(chatAppService.createChatStream(userId, request))
+            )
         } else {
-            MediaType.APPLICATION_JSON
+            chatAppService.handleSyncChat(userId, request)
+                .map { content ->
+                    ResponseEntity.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(ChatSyncResponse(content))
+                }
         }
-
-        return ResponseEntity.ok()
-            .contentType(mediaType)
-            .body(chatAppService.createChat(userId, request))
     }
 }

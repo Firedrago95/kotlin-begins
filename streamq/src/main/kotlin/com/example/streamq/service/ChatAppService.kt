@@ -16,11 +16,7 @@ class ChatAppService(
 ) {
     private val log = LoggerFactory.getLogger(ChatAppService::class.java)
 
-    fun createChat(userId: Long, request: ChatRequest): Flux<String> {
-        if (!request.isStreaming) {
-            return handleSyncChat(userId, request).flux()
-        }
-
+    fun createChatStream(userId: Long, request: ChatRequest): Flux<String> {
         // 스트리밍 처리
         // 1. 블로킹 작업을 boundedElastic 에게 던짐
         return Mono.fromCallable {
@@ -58,7 +54,7 @@ class ChatAppService(
         }
     }
 
-    private fun handleSyncChat(userId: Long, request: ChatRequest): Mono<String> {
+    fun handleSyncChat(userId: Long, request: ChatRequest): Mono<String> {
         return Mono.fromCallable {
             val (userChat, aiChat) = chatDomainService.prepareChats(userId, request.content)
             val history = chatDomainService.getChatHistory(userChat.thread.id, aiChat.id)
