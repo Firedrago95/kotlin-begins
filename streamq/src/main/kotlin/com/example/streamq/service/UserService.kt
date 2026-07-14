@@ -3,10 +3,10 @@ package com.example.streamq.service
 import com.example.streamq.domain.user.Provider
 import com.example.streamq.domain.user.User
 import com.example.streamq.domain.user.UserRepository
-import jakarta.transaction.Transactional
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException
 import org.springframework.security.oauth2.core.OAuth2Error
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class UserService (
